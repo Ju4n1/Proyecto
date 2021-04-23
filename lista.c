@@ -1,0 +1,201 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "lista.h"
+
+/**
+ Inicializa una lista vacía.
+ Una referencia a la lista creada es referenciada en *L.
+**/
+void crear_lista(tLista * l) {
+
+     // Reservo la memoria de la lista, y compruebo que la operación se haya realizado sin error.
+    (*l) = (tLista) malloc(sizeof(struct celda));
+     if ((*l) == NULL)
+        exit(LST_ERROR_MEMORIA);
+
+     // Lista vacía "centinela".
+    (*l)->elemento = NULL;
+    (*l)->siguiente = NULL;
+}
+
+/**
+ Inserta el elemento E, en la posición P, en L.
+ Con L = A,B,C,D y la posición P direccionando C, luego:
+ L' = A,B,E,C,D
+**/
+void l_insertar(tLista l, tPosicion p, tElemento e) {
+
+	// Verifico que la posición sea válida, si se asume p siempre válida se puede obviar el chequeo.
+	if (p==NULL)
+        exit(LST_POSICION_INVALIDA);
+
+    // Reservo la memoria que ocupara la nueva posición, y cheque que la operacion no termine en error.
+    tPosicion posNuevaCelda = (tPosicion) malloc(sizeof(struct celda));
+    if (posNuevaCelda == NULL)
+        exit(LST_ERROR_MEMORIA);
+
+	// Se asignan todos los valores correspondientes a la posición nueva.
+    posNuevaCelda->elemento = e;
+    posNuevaCelda->siguiente = p->siguiente;
+    p->siguiente = posNuevaCelda;
+}
+
+/**
+ Elimina el nodo que se encuentra en la posición P de L.
+ El elemento almacenado en la posición P es eliminado mediante la función fEliminar parametrizada.
+ Si P es fin(L), finaliza indicando LST_POSICION_INVALIDA.
+**/
+void l_eliminar(tLista l, tPosicion p, void (*fEliminar)(tElemento)) {
+
+    // Chequeo que posición a eliminar sea válida
+    if(p->siguiente==NULL)
+          exit(LST_POSICION_INVALIDA);
+
+    else{
+
+         // Esta es la posición que tengo que eliminar.
+         tPosicion aux= p->siguiente;
+
+         // Hago que la posición anterior apunte a la siguiente de la eliminada.
+         p->siguiente = aux->siguiente;
+
+        // Elimino el contenido de la posicón con fEliminar y libero la memoria qye ocupa.
+        fEliminar(aux->elemento);
+        free(aux);}
+}
+
+/**
+ Destruye la lista L, elimininando cada una de sus posiciones. Los elementos almacenados en las posiciones son eliminados
+ mediante la función fEliminar parametrizada.
+**/
+void l_destruir(tLista * l, void (*fEliminar)(tElemento)){
+
+    // Primera posición con elemente en caso de que exista y un auxiliar para el ciclo.
+    tPosicion pos =(*l)->siguiente;
+    tPosicion aux;
+
+	// Recorro la lista mientras tenga elementos.
+    while(pos!= NULL){
+
+         // Importante no perder la posición que destruiré en el próximo ciclo.
+		 aux=pos->siguiente;
+
+         // Elimino el contenido y libero espacio ocupado.
+         fEliminar(pos->elemento);
+         free(pos);
+
+		 // Ahora puedo destruir la siguiente posición.
+         pos=aux;
+                      }
+
+// Cuando todas la posiciones están destruidas, libero la memeria de lista y corto su referencia.
+free(*l);
+*l = NULL;
+}
+
+/**
+ Recupera y retorna el elemento en la posición P.
+ Si P es fin(L), finaliza indicando LST_POSICION_INVALIDA.
+**/
+tElemento l_recuperar(tLista l, tPosicion p) {
+
+      // Para poder recuperar la posición tiene que ser distinta de fin.
+      if(p == l_fin(l))
+          exit(LST_POSICION_INVALIDA);
+
+// Posición indirecta siempre recupera el elemento siguite al de la posición pasada por parámetros.
+return (p->siguiente)->elemento;}
+
+/**
+ Recupera y retorna la primera posición de L.
+ Si L es vacía, primera(L) = ultima(L) = fin(L).
+**/
+tPosicion l_primera(tLista l){
+
+// Primera siempre es el centinela.
+return l;}
+
+/**
+ Recupera y retorna la posición siguiente a P en L.
+ Si P es fin(L), finaliza indicando LST_NO_EXISTE_SIGUIENTE.
+**/
+tPosicion l_siguiente(tLista l, tPosicion p) {
+
+     // Siguiente de fin no existe, se asume p válida.
+    if(p==l_fin(l))
+        exit(LST_NO_EXISTE_SIGUIENTE);
+
+return p->siguiente;}
+
+/**
+ Recupera y retorna la posición anterior a P en L.
+ Si P es primera(L), finaliza indicando LST_NO_EXISTE_ANTERIOR.
+**/
+tPosicion l_anterior(tLista l, tPosicion p) {
+
+    // Anterior a primera no existe.
+    if(p==l_primera(l))
+        exit(LST_NO_EXISTE_ANTERIOR);
+
+    tPosicion pos = l;
+
+    // Cuando el siguiente de pos es igual a p, pos es el anterior.
+    while(pos->siguiente != p)
+         pos = pos->siguiente;
+
+return pos;}
+
+/**
+ Recupera y retorna la última posición de L.
+ Si L es vacía, primera(L) = ultima(L) = fin(L).
+**/
+tPosicion l_ultima(tLista l) {
+
+    tPosicion pos = l;
+
+    // Cuando la lista no está vacia puedo buscar ultima, sino primera=ultima=fin.
+    if(l->siguiente!=NULL)
+
+        // Cuando pos siguiente siguiente es nula, significa que estoy en la posicion que apunta a fin, en otras palabras estoy en última.
+        while(((pos->siguiente)->siguiente) != NULL)
+              pos = pos->siguiente;
+
+
+return pos;}
+
+/**
+ Recupera y retorna la posición fin de L.
+ Si L es vacía, primera(L) = ultima(L) = fin(L).
+**/
+tPosicion l_fin(tLista l) {
+      // Importante pararse en primera porque si l está vacia primera=fin.
+      tPosicion pos = l;
+
+      //Cuando pos siguiente es nula estoy en fin.
+      while(pos->siguiente!=NULL)
+            pos = pos->siguiente;
+
+return pos;}
+
+/**
+ Función que devuelve la longitud de la  lista.
+**/
+int l_longitud(tLista l) {
+    // Inicialmente la lista esta vacía.
+    int contador = 0;
+
+    // Posición para recorrer la lista contanto.
+    tPosicion pos = l;
+        while(pos->siguiente != NULL){
+            pos = pos->siguiente;
+            contador++;}
+
+return contador;}
+
+
+
+
+
+
+
+
